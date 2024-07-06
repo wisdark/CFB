@@ -1,0 +1,76 @@
+name: Notify
+
+on:
+  pull_request:
+    types: [ opened ]
+  issues:
+      types: [ opened ]
+  workflow_run:
+    workflows: ["Build", "Test"]
+    types: [completed]
+    branches: ["*"]
+
+permissions:
+  contents: read
+
+env:
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
+jobs:
+  on_workflow_failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - uses: sarisia/actions-status-discord@v1
+        with:
+          nodetail: true
+          title: "⚠️ '${{ github.event.workflow_run.name }}' failed ${{ github.sha }} on ${{ github.ref }} ${{ github.actor }}"
+          description: |
+            Build failure for
+              ● SHA ${{ github.sha }}
+              ● REF ${{ github.ref }}
+              ● ACTOR ${{ github.actor }}
+
+            ---
+            [Link](${{ github.event.workflow_run.html_url }})
+          color: 0xff0000
+          username: ${{ github.actor }} on CFB
+          avatar_url: https://i.imgur.com/O4RKNqj.png
+
+  on_pull_requests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: sarisia/actions-status-discord@v1
+        with:
+          nodetail: true
+          title: "🚧 ${{ github.actor }} ${{ github.event.action }} PR `#${{ github.event.pull_request.number }}`"
+          description: |
+            **${{ github.event.pull_request.title }}**
+
+            ${{ github.event.pull_request.body }}
+
+            ---
+            [Link](${{ github.event.pull_request.html_url }})
+          color: 0x00ff00
+          username: ${{ github.actor }} on CFB
+          avatar_url: https://i.imgur.com/O4RKNqj.png
+
+  on-issues:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues'
+    steps:
+      - uses: sarisia/actions-status-discord@v1
+        with:
+          nodetail: true
+          title: "❓ ${{ github.actor }} ${{ github.event.action }} Issue `#${{ github.event.issue.number }}`"
+          description: |
+            **${{ github.event.issue.title }}**
+
+            ${{ github.event.issue.body }}
+
+            ---
+            [Link](${{ github.event.issue.html_url }})
+          color: 0x0000ff
+          username: ${{ github.actor }} on CFB
+          avatar_url: https://i.imgur.com/O4RKNqj.png
